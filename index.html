@@ -1,72 +1,28 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quiz App</title>
-
-<style>
-body {
-  font-family: Arial;
-  text-align: center;
-  background: #0f172a;
-  color: white;
-}
-
-button {
-  padding: 15px;
-  margin: 10px;
-  width: 80%;
-  border-radius: 10px;
-  border: none;
-  font-size: 16px;
-}
-
-.main-btn { background: #22c55e; }
-.lb-btn { background: #eab308; }
-.opt-btn { background: #1e293b; color: white; }
-
-#ownerPanel {
-  background: #1e293b;
-  padding: 10px;
-  border-radius: 10px;
-  margin-top: 20px;
-}
-</style>
-</head>
-
-<body>
-
-<h2>🔥 Quiz App</h2>
-
-<button class="main-btn" onclick="startTest()">🎯 Start Test</button>
-<button class="lb-btn" onclick="loadLeaderboard()">🏆 Leaderboard</button>
-
-<div id="quiz"></div>
-
-<!-- OWNER PANEL -->
-<div id="ownerPanel" style="display:none;">
-  <h3>👑 Owner Panel</h3>
-
-  <input type="file" id="pdf"><br><br>
-  <input type="text" id="subject" placeholder="Enter Subject"><br><br>
-
-  <button onclick="uploadPDF()">📄 Upload PDF</button>
-</div>
-
 <script>
 
-// 🔥 IMPORTANT: अपना Render URL डालो
+// 🔥 अपना Render URL
 let BASE_URL = "https://quiz-mini-app-mh5e.onrender.com";
 
-// Telegram user
-let user = Telegram.WebApp.initDataUnsafe.user;
-
-// OWNER ID (same as backend)
+// 🔥 OWNER ID
 let OWNER_ID = 6446087354;
 
-// Show owner panel
-if(user && user.id == OWNER_ID){
-  document.getElementById("ownerPanel").style.display = "block";
+// Telegram user fix
+let user = null;
+
+if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+    user = Telegram.WebApp.initDataUnsafe.user;
+}
+
+console.log("User Data:", user);
+
+// 👑 Owner panel show
+if(user){
+    if(user.id == OWNER_ID){
+        document.getElementById("ownerPanel").style.display = "block";
+    }
+}else{
+    // TEMP FIX (debug mode)
+    document.getElementById("ownerPanel").style.display = "block";
 }
 
 // 📄 Upload PDF
@@ -82,24 +38,24 @@ async function uploadPDF(){
   let formData = new FormData();
   formData.append("file", file);
 
-  await fetch(BASE_URL + "/upload?subject="+subject+"&user_id="+user.id,{
+  await fetch(BASE_URL + "/upload?subject="+subject+"&user_id="+(user ? user.id : OWNER_ID),{
     method:"POST",
     body: formData
   });
 
-  alert("✅ Uploaded Successfully");
+  alert("✅ Uploaded");
 }
 
-// 🎯 Start Quiz
+// 🎯 Quiz
 async function startTest(){
 
-  let subject = prompt("Enter Subject Name");
+  let subject = prompt("Enter Subject");
 
   let res = await fetch(BASE_URL + "/quiz?subject="+subject);
   let data = await res.json();
 
   if(data.length == 0){
-    alert("❌ No Questions Found");
+    alert("No questions found");
     return;
   }
 
@@ -107,10 +63,9 @@ async function startTest(){
   let score = 0;
 
   function showQ(){
-
     if(i >= data.length){
-      fetch(BASE_URL + "/score?user_id="+user.id+"&score="+score,{method:"POST"});
-      document.getElementById("quiz").innerHTML = `<h2>🎉 Score: ${score}</h2>`;
+      fetch(BASE_URL + "/score?user_id="+(user ? user.id : 0)+"&score="+score,{method:"POST"});
+      document.getElementById("quiz").innerHTML = "🎉 Score: "+score;
       return;
     }
 
@@ -120,7 +75,7 @@ async function startTest(){
     let html = `<h3>${q[1]}</h3>`;
 
     options.forEach((opt, index)=>{
-      html += `<button class="opt-btn" onclick="check('${String.fromCharCode(65+index)}')">${opt}</button>`;
+      html += `<button onclick="check('${String.fromCharCode(65+index)}')">${opt}</button>`;
     });
 
     document.getElementById("quiz").innerHTML = html;
@@ -141,16 +96,13 @@ async function loadLeaderboard(){
   let res = await fetch(BASE_URL + "/leaderboard");
   let data = await res.json();
 
-  let html = "<h3>🏆 Top Users</h3>";
+  let html = "<h3>🏆 Leaderboard</h3>";
 
   data.forEach(d=>{
-    html += `<p>User ${d[0]} - Score ${d[1]}</p>`;
+    html += `<p>User ${d[0]} - ${d[1]}</p>`;
   });
 
   document.getElementById("quiz").innerHTML = html;
 }
 
 </script>
-
-</body>
-</html>
