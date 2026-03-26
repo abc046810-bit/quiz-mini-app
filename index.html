@@ -1,32 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz App</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #0f172a;
+  color: white;
+}
+
+button {
+  padding: 15px;
+  margin: 10px;
+  width: 80%;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+}
+
+#ownerPanel {
+  display: none;
+  background: #1e293b;
+  padding: 10px;
+  border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🔥 Quiz App</h2>
+
+<button onclick="startTest()">🎯 Start Test</button>
+<button onclick="loadLeaderboard()">🏆 Leaderboard</button>
+
+<div id="quiz"></div>
+
+<div id="ownerPanel">
+  <h3>👑 Owner Panel</h3>
+  <input type="file" id="pdf"><br><br>
+  <input type="text" id="subject" placeholder="Subject"><br><br>
+  <button onclick="uploadPDF()">📄 Upload PDF</button>
+</div>
+
 <script>
 
-// 🔥 अपना Render URL
 let BASE_URL = "https://quiz-mini-app-mh5e.onrender.com";
-
-// 🔥 OWNER ID
 let OWNER_ID = 6446087354;
 
-// Telegram user fix
 let user = null;
 
-if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
-    user = Telegram.WebApp.initDataUnsafe.user;
-}
+// 🧠 WAIT until page loads (IMPORTANT FIX)
+window.onload = function(){
 
-console.log("User Data:", user);
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+      user = Telegram.WebApp.initDataUnsafe.user;
+  }
 
-// 👑 Owner panel show
-if(user){
-    if(user.id == OWNER_ID){
-        document.getElementById("ownerPanel").style.display = "block";
+  console.log("User:", user);
+
+  let panel = document.getElementById("ownerPanel");
+
+  if(panel){
+    if(user && user.id == OWNER_ID){
+        panel.style.display = "block";
+    }else{
+        // TEMP DEBUG (force show)
+        panel.style.display = "block";
     }
-}else{
-    // TEMP FIX (debug mode)
-    document.getElementById("ownerPanel").style.display = "block";
-}
+  }
 
-// 📄 Upload PDF
+};
+
+// 📄 Upload
 async function uploadPDF(){
+
   let file = document.getElementById("pdf").files[0];
   let subject = document.getElementById("subject").value;
 
@@ -55,7 +106,7 @@ async function startTest(){
   let data = await res.json();
 
   if(data.length == 0){
-    alert("No questions found");
+    alert("No Questions Found");
     return;
   }
 
@@ -63,6 +114,7 @@ async function startTest(){
   let score = 0;
 
   function showQ(){
+
     if(i >= data.length){
       fetch(BASE_URL + "/score?user_id="+(user ? user.id : 0)+"&score="+score,{method:"POST"});
       document.getElementById("quiz").innerHTML = "🎉 Score: "+score;
@@ -106,3 +158,6 @@ async function loadLeaderboard(){
 }
 
 </script>
+
+</body>
+</html>
