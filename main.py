@@ -3,13 +3,13 @@ from fastapi.responses import FileResponse
 import sqlite3
 import pdfplumber
 import re
-import threading
 import os
+import asyncio
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler
 
-# ================== CONFIG (SECURE) ==================
+# ================== CONFIG ==================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 APP_URL = os.getenv("APP_URL", "https://your-app.onrender.com")
@@ -29,7 +29,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS leaderboard
 
 conn.commit()
 
-# ================== SERVE MINI APP ==================
+# ================== HOME ==================
 @app.get("/")
 def home():
     return FileResponse("index.html")
@@ -39,7 +39,7 @@ def home():
 async def upload_pdf(subject: str, file: UploadFile = File(...), user_id: int = 0):
 
     if int(user_id) != OWNER_ID:
-        return {"error": "❌ Only owner allowed"}
+        return {"error": "Only owner allowed"}
 
     content = await file.read()
 
@@ -102,14 +102,22 @@ async def start(update, context):
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-def run_bot():
+# ================== BOT RUN ==================
+async def run_bot():
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN missing")
         return
 
-    bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
-    bot_app.add_handler(CommandHandler("start", start))
-    bot_app.run_polling()
+    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
+    app_bot.add_handler(CommandHandler("start", start))
 
-# Thread में bot start
-threading.Thread(target=run_bot).start()
+    print("✅ Bot Started")
+
+    await app_bot.initialize()
+    await app_bot.start()
+    await app_bot.updater.start_polling()
+
+# ================== STARTUP EVENT ==================
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(run_bot())
