@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial; text-align:center; }
+button { padding:15px; margin:10px; width:80%; }
+</style>
+</head>
+
+<body>
+
+<h2>🔥 Quiz App</h2>
+
+<button onclick="startTest()">🎯 Start Test</button>
+<button onclick="loadLeaderboard()">🏆 Leaderboard</button>
+
+<div id="ownerPanel" style="display:none;">
+<h3>👑 Owner Panel</h3>
+<input type="file" id="pdf">
+<input type="text" id="subject" placeholder="Subject">
+<button onclick="upload()">📄 Upload PDF</button>
+</div>
+
+<div id="quiz"></div>
+
+<script>
+let user = Telegram.WebApp.initDataUnsafe.user;
+let owner_id = 123456789;
+
+if(user.id == owner_id){
+ document.getElementById("ownerPanel").style.display = "block";
+}
+
+async function upload(){
+ let file = document.getElementById("pdf").files[0];
+ let subject = document.getElementById("subject").value;
+
+ let formData = new FormData();
+ formData.append("file", file);
+
+ await fetch(`/upload?subject=${subject}`, {
+  method:"POST",
+  body: formData
+ });
+
+ alert("Uploaded ✅");
+}
+
+async function startTest(){
+ let subject = prompt("Enter Subject");
+
+ let res = await fetch(`/quiz?subject=${subject}`);
+ let data = await res.json();
+
+ let i = 0;
+ let score = 0;
+
+ function showQ(){
+  if(i >= data.length){
+    fetch("/score?user_id="+user.id+"&score="+score, {method:"POST"});
+    document.getElementById("quiz").innerHTML = "🎉 Score: "+score;
+    return;
+  }
+
+  let q = data[i];
+  let options = JSON.parse(q[2]);
+
+  let html = `<h3>${q[1]}</h3>`;
+
+  options.forEach((opt, index)=>{
+    html += `<button onclick="check('${String.fromCharCode(65+index)}')">${opt}</button>`;
+  });
+
+  document.getElementById("quiz").innerHTML = html;
+
+  setTimeout(()=>{
+    i++;
+    showQ();
+  }, 10000); // ⏳ Timer
+ }
+
+ window.check = function(ans){
+   if(ans == data[i][3]) score++;
+   i++;
+   showQ();
+ }
+
+ showQ();
+}
+
+async function loadLeaderboard(){
+ let res = await fetch("/leaderboard");
+ let data = await res.json();
+
+ let html = "<h3>🏆 Top Users</h3>";
+ data.forEach(d=>{
+   html += `<p>User ${d[0]} - ${d[1]}</p>`;
+ });
+
+ document.getElementById("quiz").innerHTML = html;
+}
+</script>
+
+</body>
+</html>
